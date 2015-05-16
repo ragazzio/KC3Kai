@@ -1,13 +1,26 @@
 var TabCrafts = {
-	active: false,
+	status: {
+		active: false,
+		error: false,
+		message: "",
+		check :function(){
+			if(this.error){
+				app.Strategy.showError( this.message );
+				return false;
+			}
+			return true;
+		}
+	},
 	
 	init :function(){
-		if(this.active) return false; this.active = true;
+		if(this.status.active) return true;
 		
-		app.Player.load();
+		this.status.active = true;
 	},
 	
 	show :function(){
+		if(!this.status.check()) return false;
+		
 		// Get pagination
 		app.Logging.count_build(function(NumRecords){
 			var itemsPerPage = 25;
@@ -22,10 +35,10 @@ var TabCrafts = {
 			$(".page_crafts .build_pages .build_page").on("click", function(){
 				$(".page_crafts .build_page").removeClass("active");
 				$(this).addClass("active");
-				PageTabs.crafts.showPage( $(this).text() );
+				app.Strategy.tabs.crafts.showPage( $(this).text() );
 			});
 			
-			$(".page_crafts .build_pages .build_page").first().click();
+			$(".page_crafts .build_pages .build_page").first().trigger("click");
 		});
 	},
 	

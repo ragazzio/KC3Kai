@@ -1,21 +1,44 @@
 var TabShips = {
-	active: false,
+	status: {
+		active: false,
+		error: false,
+		message: "",
+		check :function(){
+			if(this.error){
+				app.Strategy.showError( this.message );
+				return false;
+			}
+			return true;
+		}
+	},
+	
 	_ships:[],
 	sortBy: "id",
 	sortAsc: true,
 	filters:[],
 	equipMode: 0,
 	
-	/* onReady, initialize
-	--------------------------------------------*/
+	/* Load data, error if not available, compile array
+	---------------------------------------------------*/
 	init :function(){
-		if(this.active) return false; this.active = true;
+		if(this.status.active) return true;
 		
-		var tempItems, ctr, ThisShip, MasterShip;
-		app.Ships.load();
-		app.Gears.load();
+		// Load ships and error if empty
+		if(!app.Ships.load()){
+			this.status.error = true;
+			this.status.message = "Ship list not available";
+			return false;
+		}
+		
+		// Load equipment and error if empty
+		if(!app.Gears.load()){
+			this.status.error = true;
+			this.status.message = "Equipment list not available";
+			return false;
+		}
 		
 		// Compile ships on Index
+		var tempItems, ctr, ThisShip, MasterShip;
 		for(ctr in app.Ships.list){
 			ThisShip = app.Ships.list[ctr];
 			MasterShip = app.Master.ship(ThisShip.api_ship_id);
@@ -29,7 +52,7 @@ var TabShips = {
 				equip: ThisShip.api_slot,
 				locked: ThisShip.api_locked,
 				hp: ThisShip.api_maxhp,
-				// nax, naked, equipped
+				// max, naked, equipped
 				fp: [MasterShip.api_houg[1], MasterShip.api_houg[0]+ThisShip.api_kyouka[0], ThisShip.api_karyoku[0] ],
 				tp: [MasterShip.api_raig[1], MasterShip.api_raig[0]+ThisShip.api_kyouka[1], ThisShip.api_raisou[0] ],
 				aa: [MasterShip.api_tyku[1], MasterShip.api_tyku[0]+ThisShip.api_kyouka[2], ThisShip.api_taiku[0] ],
@@ -42,6 +65,7 @@ var TabShips = {
 			});
 		}
 		
+		this.status.active = true;
 	},
 	
 	/* Compute Derived Stats without Equipment
@@ -59,9 +83,11 @@ var TabShips = {
 		return EquippedValue;
 	},
 	
-	/* Show the page
+	/* Attempt to show the page
 	--------------------------------------------*/
 	show :function(){
+		if(!this.status.check()) return false;
+		
 		var self = this;
 		
 		var sCtr, cElm;
@@ -119,6 +145,8 @@ var TabShips = {
 		this.listTable();
 	},
 	
+	/* Re-fill ship list depending on params
+	--------------------------------------------*/
 	listTable :function(){
 		var self = this;
 		
@@ -169,6 +197,8 @@ var TabShips = {
 				return returnVal;
 			});
 			
+			var totals = {lv:0, hp:0, fp:0, tp:0, aa:0, ar:0, as:0, ev:0, ls:0, lk:0 };
+			
 			// Fill up list
 			for(shipCtr in FilteredShips){
 				cShip = FilteredShips[shipCtr];
@@ -184,14 +214,27 @@ var TabShips = {
 				$(".ship_hp", cElm).text( cShip.hp );
 				$(".ship_lk", cElm).text( cShip.lk );
 				
+				totals.lv += parseInt(cShip.level, 10);
+				totals.hp += parseInt(cShip.hp, 10);
+				totals.lk += parseInt(cShip.lk, 10);
+				
 				self.modernizableStat("fp", cElm, cShip.fp);
 				self.modernizableStat("tp", cElm, cShip.tp);
 				self.modernizableStat("aa", cElm, cShip.aa);
 				self.modernizableStat("ar", cElm, cShip.ar);
 				
+				totals.fp += parseInt($(".ship_fp", cElm).text(), 10);
+				totals.tp += parseInt($(".ship_tp", cElm).text(), 10);
+				totals.aa += parseInt($(".ship_aa", cElm).text(), 10);
+				totals.ar += parseInt($(".ship_ar", cElm).text(), 10);
+				
 				$(".ship_as", cElm).text( cShip.as[self.equipMode] );
 				$(".ship_ev", cElm).text( cShip.ev[self.equipMode] );
 				$(".ship_ls", cElm).text( cShip.ls[self.equipMode] );
+				
+				totals.as += parseInt(cShip.as[self.equipMode], 10);
+				totals.ev += parseInt(cShip.ev[self.equipMode], 10);
+				totals.ls += parseInt(cShip.ls[self.equipMode], 10);
 				
 				self.equipImg(cElm, 1, cShip.equip[0]);
 				self.equipImg(cElm, 2, cShip.equip[1]);
@@ -201,10 +244,24 @@ var TabShips = {
 				if(FilteredShips[shipCtr].locked){ $(".ship_lock img", cElm).show(); }
 			}
 			
+			// Show totals
+			$(".page_ships .ship_totals .total_level").text(totals.lv);
+			$(".page_ships .ship_totals .total_hp").text(totals.hp);
+			$(".page_ships .ship_totals .total_fp").text(totals.fp);
+			$(".page_ships .ship_totals .total_tp").text(totals.tp);
+			$(".page_ships .ship_totals .total_aa").text(totals.aa);
+			$(".page_ships .ship_totals .total_ar").text(totals.ar);
+			$(".page_ships .ship_totals .total_as").text(totals.as);
+			$(".page_ships .ship_totals .total_ev").text(totals.ev);
+			$(".page_ships .ship_totals .total_ls").text(totals.ls);
+			$(".page_ships .ship_totals .total_lk").text(totals.lk);
+			
 			$(".page_ships .ship_list").show();
 		},100);
 	},
 	
+	/* Show cell contents of a mod stat
+	--------------------------------------------*/
 	modernizableStat :function(stat, cElm, Values){
 		$(".ship_"+stat, cElm).text( Values[this.equipMode+1] );
 		if(Values[0] == Values[1]){
@@ -214,6 +271,8 @@ var TabShips = {
 		}
 	},
 	
+	/* Show single equipment icon
+	--------------------------------------------*/
 	equipImg :function(cElm, equipNum, gear_id){
 		if(gear_id > -1){
 			if(!app.Gears.get(gear_id)){
@@ -225,7 +284,6 @@ var TabShips = {
 		}else{
 			$(".ship_equip_"+equipNum, cElm).hide();
 		}
-	},
+	}
 	
-	dummy:""
 };

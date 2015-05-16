@@ -1,13 +1,26 @@
 var TabDevmt = {
-	active: false,
+	status: {
+		active: false,
+		error: false,
+		message: "",
+		check :function(){
+			if(this.error){
+				app.Strategy.showError( this.message );
+				return false;
+			}
+			return true;
+		}
+	},
 	
 	init :function(){
-		if(this.active) return false; this.active = true;
+		if(this.status.active) return true;
 		
-		app.Player.load();
+		this.status.active = true;
 	},
 	
 	show :function(){
+		if(!this.status.check()) return false;
+		
 		// Get pagination
 		app.Logging.count_devmt(function(NumRecords){
 			var itemsPerPage = 25;
@@ -22,10 +35,10 @@ var TabDevmt = {
 			$(".page_devmt .build_pages .build_page").on("click", function(){
 				$(".page_devmt .build_page").removeClass("active");
 				$(this).addClass("active");
-				PageTabs.devmt.showPage( $(this).text() );
+				app.Strategy.tabs.devmt.showPage( $(this).text() );
 			});
 			
-			$(".page_devmt .build_pages .build_page").first().click();
+			$(".page_devmt .build_pages .build_page").first().trigger("click");
 		});
 	},
 	
@@ -36,7 +49,6 @@ var TabDevmt = {
 			var ctr, thisBuild, buildbox, MasterItem;
 			for(ctr in response){
 				thisBuild = response[ctr];
-				MasterItem = app.Master.slotitem(thisBuild.result);
 				
 				buildbox = $(".page_devmt .factory .build_item").clone().appendTo(".page_devmt .build_list");
 				
@@ -49,10 +61,17 @@ var TabDevmt = {
 				$(".build_rsc3", buildbox).text( thisBuild.rsc3 );
 				$(".build_rsc4", buildbox).text( thisBuild.rsc4 );
 				
+				if(thisBuild.result > -1){
+					MasterItem = app.Master.slotitem(thisBuild.result);
+					$(".build_ricon img", buildbox).attr("src", "../../assets/img/items/"+MasterItem.api_type[3]+".png");
+					$(".build_result", buildbox).text( MasterItem.english );
+				}else{
+					$(".build_ricon img", buildbox).attr("src", "../../assets/img/client/penguin.png");
+					$(".build_result", buildbox).text( "Penguin" );
+				}
 				
-				$(".build_ricon img", buildbox).attr("src", "../../assets/img/items/"+MasterItem.api_type[3]+".png");
-				$(".build_result", buildbox).text( MasterItem.english );
 				$(".build_time", buildbox).text( new Date(thisBuild.time*1000).format("mmm dd, yy - hh:MM tt") );
+				
 			}
 		});
 		

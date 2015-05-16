@@ -198,21 +198,21 @@ KC3.prototype.Logging  = {
 		
 	},
 	
-	count_sortie: function(callback){
+	count_normal_sorties: function(callback){
 		this.database.sortie
 			.where("hq").equals(this.index)
-			.and(function(sortie){ return sortie.world < 10; })
+			.and(function(sortie){ return sortie.world < 10 && sortie.mapnum<5; })
 			.count(callback);
 	},
 	
-	get_sortie :function(pageNumber, callback){
-		var itemsPerPage = 25;
+	get_normal_sorties :function(pageNumber, callback){
+		var itemsPerPage = 10;
 		var self = this;
 		var sortieIds = [], bctr, sortieIndexed = {};
 		
 		this.database.sortie
 			.where("hq").equals(this.index)
-			.and(function(sortie){ return sortie.world < 10; })
+			.and(function(sortie){ return sortie.world < 10 && sortie.mapnum<5; })
 			.reverse()
 			.offset( (pageNumber-1)*itemsPerPage ).limit( itemsPerPage )
 			.toArray(function(sortieList){
@@ -239,14 +239,16 @@ KC3.prototype.Logging  = {
 			});
 	},
 	
-	get_event :function(world_id, callback){
+	get_world :function(world, pageNumber, callback){
+		var itemsPerPage = 10;
 		var self = this;
 		var sortieIds = [], bctr, sortieIndexed = {};
 		
 		this.database.sortie
 			.where("hq").equals(this.index)
-			.and(function(sortie){ return sortie.world == world_id; })
+			.and(function(sortie){ return sortie.world==world; })
 			.reverse()
+			.offset( (pageNumber-1)*itemsPerPage ).limit( itemsPerPage )
 			.toArray(function(sortieList){
 				// Compile all sortieIDs and indexify
 				for(bctr in sortieList){
@@ -271,8 +273,59 @@ KC3.prototype.Logging  = {
 			});
 	},
 	
-	get_battle :function(){
+	get_map :function(world, map, pageNumber, callback){
+		var itemsPerPage = 10;
+		var self = this;
+		var sortieIds = [], bctr, sortieIndexed = {};
 		
+		this.database.sortie
+			.where("hq").equals(this.index)
+			.and(function(sortie){ return sortie.world==world && sortie.mapnum==map; })
+			.reverse()
+			.offset( (pageNumber-1)*itemsPerPage ).limit( itemsPerPage )
+			.toArray(function(sortieList){
+				// Compile all sortieIDs and indexify
+				for(bctr in sortieList){
+					sortieIds.push(sortieList[bctr].id);
+					sortieIndexed["s"+sortieList[bctr].id] = sortieList[bctr];
+					sortieIndexed["s"+sortieList[bctr].id].battles = [];
+				}
+				
+				// Get all battles on those sorties
+				self.database.battle
+					.where("sortie_id").anyOf(sortieIds)
+					.toArray(function(battleList){
+						for(bctr in battleList){
+							if(typeof sortieIndexed["s"+battleList[bctr].sortie_id] != "undefined"){
+								sortieIndexed["s"+battleList[bctr].sortie_id].battles.push(battleList[bctr]);
+							}else{
+								console.error("orphan battle", battleList[bctr]);
+							}
+						}
+						callback(sortieIndexed);
+					});
+			});
+	},
+	
+	get_sortie :function( sortie_id, callback ){
+		var self = this;
+		this.database.sortie
+			.where("id").equals(sortie_id)
+			.toArray(function(response){
+				if(response.length > 0){
+					
+					// Get all battles on this sortie
+					self.database.battle
+						.where("sortie_id").equals(sortie_id)
+						.toArray(function(battleList){
+							response[0].battles = battleList;
+							callback(response[0]);
+						});
+						
+				}else{
+					callback(false);
+				}
+			});
 	},
 	
 	get_resource :function(HourNow, callback){
