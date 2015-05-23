@@ -75,12 +75,14 @@ var TabE_spring2015 = {
 	--------------------------------------------*/
 	fillGauge: function(map_id, data){
 		var thisMapBox = $(".page_spr2015 .sortie_map.map_"+map_id);
+		var getDifficulty = ["","(丙)","(乙)","(甲)"][(data || {difficulty:0}).difficulty || 0];
+		
 		if(typeof data != "undefined"){
 			if(data.clear==0){
-				$(".map_name span", thisMapBox).text( data.curhp + "/" + data.maxhp );
+				$(".map_name span", thisMapBox).text(getDifficulty + " " + data.curhp + "/" + data.maxhp );
 				$(".map_val", thisMapBox).css("width", ((data.curhp/data.maxhp)*98)+"px");
 			}else{
-				$(".map_name span", thisMapBox).text("Cleared!");
+				$(".map_name span", thisMapBox).text(getDifficulty + " Cleared!");
 				$(".map_hp", thisMapBox).addClass("cleared");
 			}
 		}else{

@@ -90,6 +90,22 @@ $(document).on("ready", function(){
 		showInput_backgroundPanel();
 	});
 	
+	// Panel: Background Align Horizontal
+	showInput_backgroundAlignH();
+	$(".background_align_h .option").on("click", function(){
+		app.Config.background_align_h = $(this).data("horizontal");
+		app.Config.save();
+		showInput_backgroundAlignH();
+	});
+
+	// Panel: Background Align Vertical
+	showInput_backgroundAlignV();
+	$(".background_align_v .option").on("click", function(){
+		app.Config.background_align_v = $(this).data("vertical");
+		app.Config.save();
+		showInput_backgroundAlignV();
+	});
+
 	// Panel Transparency
 	showInput_palpha();
 	$(".panelalpha input").on("change", function(){
@@ -128,6 +144,14 @@ $(document).on("ready", function(){
 		app.Config.showCraft = !app.Config.showCraft;
 		app.Config.save();
 		showInput_craft();
+	});
+	
+	// Show Exit Confirmation
+	showInput_exiting();
+	$(".askExit .option").on("click", function(){
+		app.Config.askExit = $(this).data("num");
+		app.Config.save();
+		showInput_exiting();
 	});
 	
 });
@@ -201,6 +225,20 @@ function showInput_backgroundPanel(){
 	});
 }
 
+function showInput_backgroundAlignH(){
+	$(".background_align_h").fadeOut(200, function(){
+		$(".option-"+app.Config.background_align_h+" input", this).prop("checked", true);
+		$(this).fadeIn(200);
+	});
+}
+
+function showInput_backgroundAlignV(){
+	$(".background_align_v").fadeOut(200, function(){
+		$(".option-"+app.Config.background_align_v+" input", this).prop("checked", true);
+		$(this).fadeIn(200);
+	});
+}
+
 function showInput_palpha(){
 	$(".panelalpha").fadeOut(200, function(){
 		$("input", this).val(app.Config.panelAlpha);
@@ -232,6 +270,13 @@ function showInput_predict(){
 function showInput_craft(){
 	$(".showCraft").fadeOut(200, function(){
 		$("input", this).prop("checked", app.Config.showCraft);
+		$(this).fadeIn(200);
+	});
+}
+
+function showInput_exiting(){
+	$(".askExit").fadeOut(200, function(){
+		$(".option-"+app.Config.askExit+" input", this).prop("checked", true);
 		$(this).fadeIn(200);
 	});
 }
